@@ -112,9 +112,9 @@ function handleAssetWatch(webpackCompiler) {
 function handler(argv) {
   const config = getWebpackConfig(argv).toConfig();
   const compiler = webpack(config);
-  const builder = argv.watch ? handleAssetWatch : handleAssetBuild;
+  const builder = argv.watch ? handleAssetWatch.bind(null, compiler) : handleAssetBuild.bind(null, compiler);
 
-  return builder(compiler)
+  return builder()
     .catch(err => {
       log('error', 'Asset compilation failed', {
         message: err.message,
