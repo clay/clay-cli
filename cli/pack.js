@@ -14,6 +14,18 @@ function builder(yargs) {
       default: [],
       description: 'list of glob patterns to compile',
       type: 'array'
+    }).option('watch', {
+      alias: ['w'],
+      default: false,
+      description: 'watch for changes and rebuild',
+      type: 'boolean'
+    }).option('environment', {
+      alias: ['e', 'env'],
+      choices: ['development', 'production'],
+      default: 'development',
+      description: 'webpack environment',
+      requiresArg: true,
+      type: 'string'
     });
 }
 
@@ -46,7 +58,7 @@ function handleAssetBuild(webpackCompiler) {
         }
       });
     }).catch(error => {
-      log('error', 'Script compilation failed', {
+      log('error', 'Webpack compilation failed', {
         message: error.message,
         stack: error.stack
       });
@@ -66,7 +78,7 @@ function handleAssetBuild(webpackCompiler) {
  */
 function handleAssetWatch(webpackCompiler) {
   return new Promise((resolve, reject) => {
-    webpackCompiler.run((err, stats) => {
+    const watchingInstance = webpackCompiler.watch((err, stats) => {
       if (err) {
         return reject(err);
       }
@@ -77,15 +89,17 @@ function handleAssetWatch(webpackCompiler) {
         return reject(new Error(msg));
       }
 
-      resolve(webpackCompiler);
-    }).then(compiler => {
-      compiler.close(error => {
-        if (error) {
-          throw error;
-        }
+      resolve(watchingInstance);
+    }).then(watching => {
+      process.on('exit', () => {
+        watching.close(error => {
+          if (error) {
+            throw error;
+          }
+        });
       });
     }).catch(error => {
-      log('error', 'Script compilation failed', {
+      log('error', 'Webpack compilation failed', {
         message: error.message,
         stack: error.stack
       });
@@ -98,21 +112,17 @@ function handleAssetWatch(webpackCompiler) {
 function handler(argv) {
   const config = getWebpackConfig(argv).toConfig();
   const compiler = webpack(config);
+  const builder = argv.watch ? handleAssetWatch : handleAssetBuild;
 
-  if (argv.watch) {
-    return;
-  }
+  return builder(compiler)
+    .catch(err => {
+      log('error', 'Asset compilation failed', {
+        message: err.message,
+        stack: err.stack
+      });
 
-  return Promise.allSettled([
-    handleAssetBuild(compiler)
-  ]).catch(err => {
-    log('error', 'Asset compilation failed', {
-      message: err.message,
-      stack: err.stack
+      throw err;
     });
-
-    throw err;
-  });
 }
 
 exports.aliases = ['p'];
