@@ -51,20 +51,20 @@ function handleAssetBuild(webpackCompiler) {
       }
 
       resolve(webpackCompiler);
-    }).then(compiler => {
-      compiler.close(error => {
-        if (error) {
-          throw error;
-        }
-      });
-    }).catch(error => {
-      log('error', 'Webpack compilation failed', {
-        message: error.message,
-        stack: error.stack
-      });
-
-      throw error;
     });
+  }).then(compiler => {
+    compiler.close(error => {
+      if (error) {
+        throw error;
+      }
+    });
+  }).catch(error => {
+    log('error', 'Webpack compilation failed', {
+      message: error.message,
+      stack: error.stack
+    });
+
+    throw error;
   });
 }
 
@@ -90,22 +90,22 @@ function handleAssetWatch(webpackCompiler) {
       }
 
       resolve(watchingInstance);
-    }).then(watching => {
-      process.on('exit', () => {
-        watching.close(error => {
-          if (error) {
-            throw error;
-          }
-        });
-      });
-    }).catch(error => {
-      log('error', 'Webpack compilation failed', {
-        message: error.message,
-        stack: error.stack
-      });
-
-      throw error;
     });
+  }).then(watching => {
+    process.on('exit', () => {
+      watching.close(error => {
+        if (error) {
+          throw error;
+        }
+      });
+    });
+  }).catch(error => {
+    log('error', 'Webpack compilation failed', {
+      message: error.message,
+      stack: error.stack
+    });
+
+    throw error;
   });
 }
 
