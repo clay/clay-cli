@@ -14,18 +14,6 @@ function builder(yargs) {
       default: [],
       description: 'list of glob patterns to compile',
       type: 'array'
-    }).option('watch', {
-      alias: ['w'],
-      default: false,
-      description: 'watch for changes and rebuild',
-      type: 'boolean'
-    }).option('environment', {
-      alias: ['e', 'env'],
-      choices: ['development', 'production'],
-      default: 'development',
-      description: 'webpack environment',
-      requiresArg: true,
-      type: 'string'
     });
 }
 
@@ -45,9 +33,9 @@ function handleAssetBuild(webpackCompiler) {
       }
 
       if (stats.hasErrors()) {
-        const msg = stats.toString('errors-only');
+        const msg = stats.toJson('errors-only');
 
-        return reject(new Error(msg));
+        return reject(msg);
       }
 
       resolve(webpackCompiler);
@@ -60,11 +48,8 @@ function handleAssetBuild(webpackCompiler) {
     });
   }).catch(error => {
     log('error', 'Webpack compilation failed', {
-      message: error.message,
-      stack: error.stack
+      error
     });
-
-    throw error;
   });
 }
 
@@ -78,17 +63,22 @@ function handleAssetBuild(webpackCompiler) {
  */
 function handleAssetWatch(webpackCompiler) {
   return new Promise((resolve, reject) => {
-    const watchingInstance = webpackCompiler.watch((err, stats) => {
-      if (err) {
-        return reject(err);
-      }
+    const watchingInstance = webpackCompiler.watch(
+      {
+        ignored: /node_modules/
+      },
+      (err, stats) => {
+        if (err) {
+          return reject(err);
+        }
 
-      if (stats.hasErrors()) {
-        const msg = stats.toString('errors-only');
+        if (stats.hasErrors()) {
+          const msg = stats.toJson('errors-only');
 
-        return reject(new Error(msg));
+          return reject(msg);
+        }
       }
-    });
+    );
 
     resolve(watchingInstance);
   }).then(watching => {
@@ -104,8 +94,6 @@ function handleAssetWatch(webpackCompiler) {
       message: error.message,
       stack: error.stack
     });
-
-    throw error;
   });
 }
 
@@ -114,15 +102,7 @@ function handler(argv) {
   const compiler = webpack(config);
   const builder = argv.watch ? handleAssetWatch.bind(null, compiler) : handleAssetBuild.bind(null, compiler);
 
-  return builder()
-    .catch(err => {
-      log('error', 'Asset compilation failed', {
-        message: err.message,
-        stack: err.stack
-      });
-
-      throw err;
-    });
+  return builder();
 }
 
 exports.aliases = ['p'];
