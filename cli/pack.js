@@ -88,9 +88,9 @@ function handleAssetWatch(webpackCompiler) {
 
         return reject(new Error(msg));
       }
-
-      resolve(watchingInstance);
     });
+
+    resolve(watchingInstance);
   }).then(watching => {
     process.on('exit', () => {
       watching.close(error => {
